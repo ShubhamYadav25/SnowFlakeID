@@ -1,4 +1,4 @@
-# 🚀 Snowflake ID Generator (C#)
+# 🚀 Snowflake ID
 
 ## 📌 Introduction
 This repository implements a **Twitter Snowflake ID Algorithm** in **C#**.  
@@ -47,42 +47,41 @@ If the generated ID is **`68802193764575234`**, its binary representation might 
 ### 🔥 **How to Test Under Load**
 To evaluate **performance, concurrency, and uniqueness**, we run a **multi-threaded test**:
 ```csharp
-using System;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Threading.Tasks;
+// Number of concurrent threads
+int threadCount = 10;
 
-class Program
+// IDs generated per thread
+int idsPerThread = 100000; 
+
+// Initialize with Machine ID = 1
+var snowflake = new Snowflake(1);
+
+// To check for duplicates
+var idSet = new ConcurrentDictionary<long, bool>();
+
+var stopwatch = Stopwatch.StartNew();
+
+Parallel.For(0, threadCount, i =>
 {
-    static void Main()
+    for (int j = 0; j < idsPerThread; j++)
     {
-        int threadCount = 10;  // Number of concurrent threads
-        int idsPerThread = 100000; // IDs per thread
+        long id = snowflake.NextId();
 
-        var snowflake = new Snowflake(1); // Machine ID = 1
-        var idSet = new ConcurrentDictionary<long, bool>(); // For duplicate check
-        var stopwatch = Stopwatch.StartNew();
-
-        Parallel.For(0, threadCount, i =>
+        if (!idSet.TryAdd(id, true))
         {
-            for (int j = 0; j < idsPerThread; j++)
-            {
-                long id = snowflake.NextId();
-                if (!idSet.TryAdd(id, true))
-                {
-                    Console.WriteLine($"Duplicate ID detected: {id}");
-                }
-            }
-        });
-
-        stopwatch.Stop();
-        long totalIds = threadCount * idsPerThread;
-        Console.WriteLine($"Generated {totalIds} IDs in {stopwatch.ElapsedMilliseconds} ms");
-        Console.WriteLine($"Throughput: {totalIds / (stopwatch.ElapsedMilliseconds / 1000.0)} IDs/sec");
+            Console.WriteLine($"Duplicate ID detected: {id}");
+        }
     }
-}
+});
+
+stopwatch.Stop();
+
+long totalIds = threadCount * idsPerThread;
+Console.WriteLine($"Generated {totalIds} unique IDs in {stopwatch.ElapsedMilliseconds} ms");
+Console.WriteLine($"Throughput: {totalIds / (stopwatch.ElapsedMilliseconds / 1000.0)} IDs/sec");
 ```
 
 📊 **Expected Output**
+---
 Generated 1000000 unique IDs in 809 ms
 Throughput: 1236093.9431396786 IDs/sec
